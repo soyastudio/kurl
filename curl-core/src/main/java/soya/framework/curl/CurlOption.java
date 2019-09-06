@@ -5,11 +5,11 @@ public final class CurlOption {
     private String value;
 
 
-    CurlOption(CurlOptionType optionType) {
+    public CurlOption(CurlOptionType optionType) {
         this.optionType = optionType;
     }
 
-    CurlOption(CurlOptionType optionType, String value) {
+    public CurlOption(CurlOptionType optionType, String value) {
         this.optionType = optionType;
         this.value = value;
     }

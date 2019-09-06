@@ -47,36 +47,24 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>com.central1.fuse.shared</groupId>
+                <artifactId>entities</artifactId>
+                <version>${fuse-shared.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.central1.fuse.banking</groupId>
+                <artifactId>account-decoupling-adaptor-spec</artifactId>
+                <version>${fuselet.version}</version>
+            </dependency>
+
+            <dependency>
                 <!-- Import dependency management from Spring Boot -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${springframework.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.squareup</groupId>
-                <artifactId>javapoet</artifactId>
-                <version>${javapoet.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.codesorcerer</groupId>
-                <artifactId>codesorcerer-targets</artifactId>
-                <version>${codesorcerer.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.codesorcerer</groupId>
-                <artifactId>codesorcerer-spells</artifactId>
-                <version>${codesorcerer.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.codesorcerer</groupId>
-                <artifactId>codesorcerer-processor</artifactId>
-                <version>${codesorcerer.version}</version>
             </dependency>
 
             <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
