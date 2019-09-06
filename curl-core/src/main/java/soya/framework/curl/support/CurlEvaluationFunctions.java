@@ -81,11 +81,6 @@ public class CurlEvaluationFunctions {
 
     }
 
-    public static String base64(String data) {
-        byte[] bin = Base64.getDecoder().decode(data.getBytes());
-        return new String(bin);
-    }
-
     public static String jsonPath(String exp, String json) {
         DocumentContext context = JsonPath
                 .using(Configuration.builder()
