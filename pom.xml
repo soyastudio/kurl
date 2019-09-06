@@ -136,6 +136,7 @@
 
     <modules>
         <module>curl-core</module>
+        <module>curl-application</module>
     </modules>
 
 </project>
