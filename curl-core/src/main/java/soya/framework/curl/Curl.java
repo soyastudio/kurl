@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Curl {
+public final class Curl {
 
     private static Map<String, CurlOptionType> optionTypes = new HashMap<>();
 

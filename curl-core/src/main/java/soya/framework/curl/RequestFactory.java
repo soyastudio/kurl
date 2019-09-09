@@ -7,7 +7,7 @@ public class RequestFactory {
         this.client = client;
     }
 
-    public Request create(String name, Object input) throws InvalidFormatException {
-        return null;
+    public Request create(String name, String input) throws ServiceNotFoundException {
+        return client.getServiceInvocation(name).createRequest(input);
     }
 }

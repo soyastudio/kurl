@@ -1,17 +1,17 @@
 package soya.framework.curl.support;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.yaml.snakeyaml.Yaml;
-import soya.framework.curl.ServiceMetadata;
+import soya.framework.curl.ServiceClient;
+import soya.framework.curl.ServiceInvocation;
 
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 
-public class DefaultServiceMetadata implements ServiceMetadata {
+public class DefaultServiceClient implements ServiceClient {
     private static final String SWAGGER_CURL_METADATA = "x-curl-metadata";
     private static final String SWAGGER_CURL_PAYLOAD = "x-curl-payload";
     private static final String SWAGGER_CURL_EVALUATION = "x-curl-evaluation";
@@ -23,10 +23,10 @@ public class DefaultServiceMetadata implements ServiceMetadata {
     private List<String> options = new ArrayList<>();
     private Map<String, OperationModel> services = new HashMap<>();
 
-    private DefaultServiceMetadata() {
+    private DefaultServiceClient() {
     }
 
-    private DefaultServiceMetadata(String id, String schema) {
+    private DefaultServiceClient(String id, String schema) {
         this.id = id;
         this.schema = schema;
     }
@@ -47,8 +47,8 @@ public class DefaultServiceMetadata implements ServiceMetadata {
         metadata.put(key, value);
     }
 
-    public static DefaultServiceMetadata fromInputStream(String id, String schema, InputStream is, Properties configProperties) {
-        DefaultServiceMetadata model = new DefaultServiceMetadata(id, schema);
+    public static DefaultServiceClient fromInputStream(String id, String schema, InputStream is, Properties configProperties) {
+        DefaultServiceClient model = new DefaultServiceClient(id, schema);
         Yaml yaml = new Yaml();
         Map<String, Object> configuration = (Map<String, Object>) yaml.load(is);
 
@@ -97,12 +97,12 @@ public class DefaultServiceMetadata implements ServiceMetadata {
         return model;
     }
 
-    private static void loadServices(String path, DefaultServiceMetadata model) {
+    private static void loadServices(String path, DefaultServiceClient model) {
         Map<String, Object> serviceMap = (Map<String, Object>) new Yaml().load(getClassLoader().getResourceAsStream(path));
         loadServices(serviceMap, model);
     }
 
-    private static void loadServices(Map<String, Object> services, DefaultServiceMetadata model) {
+    private static void loadServices(Map<String, Object> services, DefaultServiceClient model) {
         if (services != null) {
             services.entrySet().forEach(entry -> {
                 String serviceName = entry.getKey();
@@ -115,7 +115,7 @@ public class DefaultServiceMetadata implements ServiceMetadata {
     private static ClassLoader getClassLoader() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
-            classLoader = DefaultServiceMetadata.class.getClassLoader();
+            classLoader = DefaultServiceClient.class.getClassLoader();
         }
 
         return classLoader;
@@ -168,18 +168,18 @@ public class DefaultServiceMetadata implements ServiceMetadata {
     }
 
     @Override
-    public Map<String, String> settings() {
-        return ImmutableMap.copyOf(metadata);
+    public Properties getConfiguration() {
+        return null;
     }
 
     @Override
-    public String[] getServiceEndpoints() {
+    public String[] getServices() {
         return new ArrayList<String>(services.keySet()).toArray(new String[services.size()]);
     }
 
     @Override
-    public OperationModel getOperationInfo(String service) {
-        return services.get(service);
+    public ServiceInvocation getServiceInvocation(String service) {
+        return null;
     }
 
     public static class OptionModel {

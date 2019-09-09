@@ -1,5 +1,13 @@
 package soya.framework.curl;
 
+import java.util.Properties;
+
 public interface ServiceClient {
-    ServiceMetadata getServiceMetadata();
+    String getId();
+
+    Properties getConfiguration();
+
+    String[] getServices();
+
+    ServiceInvocation getServiceInvocation(String service) throws ServiceNotFoundException;
 }

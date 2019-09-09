@@ -1,23 +1,33 @@
 package soya.framework.curl;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 
 public final class Request {
-    private final String name;
     private final Curl curl;
-    private Evaluator resultEvaluator;
-    private Map<String, Renderer> renderers;
+    private final String evaluator;
+    private final ImmutableMap<String, String> renderers;
 
-    public Request(String name, Curl curl) {
-        this.name = name;
+    Request(Curl curl, String evaluator, Map<String, String> renderers) {
         this.curl = curl;
-    }
-
-    public String getName() {
-        return name;
+        this.evaluator = evaluator;
+        this.renderers = renderers == null? ImmutableMap.<String, String>builder().build(): ImmutableMap.copyOf(renderers);
     }
 
     public Curl getCurl() {
         return curl;
+    }
+
+    public String getEvaluator() {
+        return evaluator;
+    }
+
+    public ImmutableMap<String, String> getRenderers() {
+        return renderers;
+    }
+
+    public static Request fromCurl(String curl) {
+        return new Request(Curl.fromCurl(curl), null, null);
     }
 }

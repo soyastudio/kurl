@@ -12,15 +12,20 @@ import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.yaml.snakeyaml.Yaml;
+import soya.framework.curl.Curl;
+import soya.framework.curl.CurlOptionType;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class CurlUtils {
 
-    public CurlUtils() {
+    private CurlUtils() {
     }
 
     public static String compile(String template, Map<String, String> params, List<String> options, String data) {
@@ -56,6 +61,111 @@ public class CurlUtils {
 
     public static String evaluate(String exp, String data) {
         return CurlCompositeFunctionalEvaluator.getInstance().evaluate(exp, data);
+    }
+
+    public static String toJson(Object obj) {
+        return new GsonBuilder().setPrettyPrinting().create().toJson(obj);
+    }
+
+    public static String[] placeHolders(String text, String startToken, boolean includeDelim) {
+
+        boolean startWith = text.startsWith(startToken + "{");
+        String prefix;
+        String suffix;
+
+        if ("$".equals(startToken)) {
+            prefix = "\\$\\{";
+            suffix = "}";
+
+        } else if ("#".equals(startToken)) {
+            prefix = "\\#\\{";
+            suffix = "}";
+
+        } else if ("@".equals(startToken)) {
+            prefix = "\\@\\{";
+            suffix = "}";
+
+        } else if ("{".equals(startToken)) {
+            prefix = "\\{\\{";
+            suffix = "}}";
+
+        } else {
+            throw new IllegalArgumentException("Start token '" + startToken + "' is not supported.");
+        }
+
+        Set<String> set = new HashSet<>();
+        String[] array = text.split(prefix);
+        for (int i = 0; i < array.length; i++) {
+            if(i == 0 && startWith || i > 0) {
+                String token = array[i];
+                int index = token.indexOf(suffix);
+                if (index < 0) {
+                    throw new IllegalArgumentException("Token starts with '" + prefix
+                            + "' but does not end with '" + suffix + "'");
+                }
+
+                if (includeDelim) {
+                    token = startToken + "{" + token.substring(0, index + suffix.length());
+                } else {
+                    token = token.substring(0, index);
+                }
+                set.add(token);
+            }
+        }
+
+        List<String> list = new ArrayList<>(set);
+        Collections.sort(list);
+
+        return list.toArray(new String[list.size()]);
+    }
+
+    public static String[] fragments(String text, String startToken) {
+        List<String> list = new ArrayList<>();
+        boolean startWith = text.startsWith(startToken + "{");
+        String prefix;
+        String suffix;
+
+        if ("$".equals(startToken)) {
+            prefix = "\\$\\{";
+            suffix = "}";
+
+        } else if ("#".equals(startToken)) {
+            prefix = "\\#\\{";
+            suffix = "}";
+
+        } else if ("@".equals(startToken)) {
+            prefix = "\\@\\{";
+            suffix = "}";
+
+        } else if ("{".equals(startToken)) {
+            prefix = "\\{\\{";
+            suffix = "}}";
+
+        } else {
+            throw new IllegalArgumentException("Start token '" + startToken + "' is not supported.");
+        }
+
+        String[] array = text.split(prefix);
+        for (int i = 0; i < array.length; i++) {
+            if(i == 0 && startWith || i > 0) {
+                String token = array[i];
+                int index = token.indexOf(suffix);
+                if (index < 0) {
+                    throw new IllegalArgumentException("Token starts with '" + prefix
+                            + "' but does not end with '" + suffix + "'");
+                }
+
+                String first = startToken + "{" + token.substring(0, index + suffix.length());
+                String second = token.substring(index + suffix.length());
+
+                list.add(first);
+                list.add(second);
+            } else {
+                list.add(array[i]);
+            }
+        }
+
+        return list.toArray(new String[list.size()]);
     }
 
     public static String base64Encode(String data) {
@@ -216,6 +326,49 @@ public class CurlUtils {
             return st;
 
         }
+    }
+
+    public static String http(Curl curl) throws IOException {
+        URL url = new URL(curl.getUrl());
+
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+        con.setRequestMethod(curl.getOption(CurlOptionType.REQUEST) == null ? "GET" : curl.getOption(CurlOptionType.REQUEST).getValue());
+        con.setDoOutput(true);
+
+        // Header:
+        if (curl.contains(CurlOptionType.HEADER)) {
+            curl.getHeaders().entrySet().forEach(h -> {
+                con.setRequestProperty(h.getKey(), h.getValue());
+            });
+        }
+
+        // Data:
+        if (curl.contains(CurlOptionType.DATA) && curl.getOption(CurlOptionType.DATA).getValue() != null) {
+            String data = curl.getData();
+            OutputStreamWriter writer = new OutputStreamWriter(con.getOutputStream());
+            writer.write(data);
+            writer.flush();
+            writer.close();
+        }
+
+        // Read response:
+        int status = con.getResponseCode();
+        Reader streamReader = null;
+        if (status > 299) {
+            streamReader = new InputStreamReader(con.getErrorStream());
+        } else {
+            streamReader = new InputStreamReader(con.getInputStream());
+        }
+
+        String out = CurlUtils.toString(streamReader);
+        streamReader.close();
+
+        return out;
+    }
+
+    public static String toString(Reader reader) throws IOException {
+        return CharStreams.toString(reader);
     }
 
     public static ClassLoader getClassLoader() {
