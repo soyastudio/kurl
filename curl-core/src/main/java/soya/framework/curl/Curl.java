@@ -107,99 +107,61 @@ public final class Curl {
         return builder.toString();
     }
 
-    public static Curl fromCurl(String curl) {
-        return new CommandLineVisitor().accept(curl).create();
-    }
+    public static Curl fromCurl(String curl) throws InvalidFormatException {
+        String url = null;
+        List<CurlOption> options = new ArrayList();
 
-    public static class CommandLineVisitor {
-        private String url;
-        private List<CurlOption> options = new ArrayList();
-
-        private transient CurlOption current;
-
-        private CommandLineVisitor() {
+        String cmd = curl.trim();
+        if (cmd.startsWith("curl ")) {
+            cmd = cmd.substring("curl ".length());
         }
+        cmd = cmd + " ";
 
-        private CommandLineVisitor accept(String command) {
-            char[] array = command.toCharArray();
-            char prev = ' ';
-            char expected = ' ';
+        char[] arr = cmd.toCharArray();
+        char ch1 = ' ';
+        char ch2 = ' ';
+        String pn = null;
 
-            StringBuilder stringBuilder = null;
-            for (char c : array) {
-                if (prev == ' ') {
-                    if (c == ' ') {
-                        // do nothing
+        StringBuilder builder = new StringBuilder();
+        for (char c : arr) {
+            if (c == ' ') {
+                ch1 = ' ';
+                ch2 = ' ';
+
+                String token = builder.toString();
+                if (token.startsWith("-")) {
+                    if (pn != null) {
+                        options.add(new CurlOption(optionTypes.get(pn)));
+                    }
+                    pn = token;
+                } else if (pn != null && optionTypes.containsKey(pn)) {
+                    CurlOptionType type = optionTypes.get(pn);
+                    if (type.equals(CurlOptionType.URL)) {
+                        url = token;
+
                     } else {
-                        stringBuilder = new StringBuilder();
-                        stringBuilder.append(c);
+                        options.add(new CurlOption(type, token));
                     }
 
                 } else {
-                    if (c == ' ') {
-                        String token = stringBuilder.toString();
-                        visit(token);
-                        stringBuilder = null;
-
-                    } else {
-                        stringBuilder.append(c);
-                    }
-
+                    url = token;
                 }
 
-                prev = c;
-            }
+                builder = new StringBuilder();
 
-            if (stringBuilder != null) {
-                String token = stringBuilder.toString();
-                visit(token);
-                stringBuilder = null;
-            }
+            } else if (c == '-') {
+                ch1 = ch2;
+                ch2 = c;
 
-            if (current != null) {
-                add(current);
-            }
-
-            return this;
-
-        }
-
-        private void visit(String token) {
-            if ("curl".equalsIgnoreCase(token)) {
-
-            } else if (optionTypes.containsKey(token)) {
-                if (current != null) {
-                    add(current);
-                }
-
-                current = new CurlOption(optionTypes.get(token));
-
-            } else if (current != null && current.getValue() == null) {
-                current.setValue(token);
+                builder.append(c);
 
             } else {
-                if (current != null) {
-                    add(current);
-                }
-
-                current = new CurlOption(CurlOptionType.URL);
-                current.setValue(token);
+                builder.append(c);
             }
+
         }
 
-        private void add(CurlOption option) {
-            if (CurlOptionType.URL.equals(option.getOptionType())) {
-                this.url = option.getValue();
-                if (url.startsWith("\"") && url.endsWith("\"") || url.startsWith("'") && url.endsWith("'")) {
-                    this.url = url.substring(1, url.length() - 1);
-                }
-            } else {
-                this.options.add(option);
-            }
-        }
-
-        public Curl create() {
-            return new Curl(url, options.toArray(new CurlOption[options.size()]));
-        }
+        return new Curl(url, options.toArray(new CurlOption[options.size()]));
     }
+
 }
