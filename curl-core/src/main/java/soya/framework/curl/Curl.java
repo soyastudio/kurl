@@ -1,6 +1,7 @@
 package soya.framework.curl;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -118,36 +119,51 @@ public final class Curl {
         cmd = cmd + " ";
 
         char[] arr = cmd.toCharArray();
+        char prev = ' ';
         char ch1 = ' ';
         char ch2 = ' ';
+        boolean quoted = false;
         String pn = null;
 
         StringBuilder builder = new StringBuilder();
         for (char c : arr) {
             if (c == ' ') {
-                ch1 = ' ';
-                ch2 = ' ';
-
-                String token = builder.toString();
-                if (token.startsWith("-")) {
-                    if (pn != null) {
-                        options.add(new CurlOption(optionTypes.get(pn)));
-                    }
-                    pn = token;
-                } else if (pn != null && optionTypes.containsKey(pn)) {
-                    CurlOptionType type = optionTypes.get(pn);
-                    if (type.equals(CurlOptionType.URL)) {
-                        url = token;
-
-                    } else {
-                        options.add(new CurlOption(type, token));
-                    }
+                if (quoted) {
+                    builder.append(c);
 
                 } else {
-                    url = token;
-                }
+                    ch1 = ' ';
+                    ch2 = ' ';
 
-                builder = new StringBuilder();
+                    String token = builder.toString();
+                    token = StringEscapeUtils.unescapeJava(token);
+
+                    if (token.startsWith("-")) {
+                        if (pn != null) {
+                            options.add(new CurlOption(optionTypes.get(pn)));
+                        }
+                        pn = token;
+
+                    } else if (pn != null) {
+                        if (optionTypes.containsKey(pn)) {
+                            CurlOptionType type = optionTypes.get(pn);
+                            if (type.equals(CurlOptionType.URL)) {
+                                url = token;
+
+                            } else {
+                                options.add(new CurlOption(type, token));
+                            }
+                        } else {
+                            throw new InvalidFormatException("Unknown option: " + pn);
+                        }
+                        pn = null;
+
+                    } else {
+                        url = token;
+                    }
+
+                    builder = new StringBuilder();
+                }
 
             } else if (c == '-') {
                 ch1 = ch2;
@@ -155,10 +171,18 @@ public final class Curl {
 
                 builder.append(c);
 
+            } else if (c == '\"') {
+                if (prev == '\\') {
+                    builder.append(c);
+                } else {
+                    quoted = !quoted;
+                }
+
             } else {
                 builder.append(c);
             }
 
+            prev = c;
         }
 
         return new Curl(url, options.toArray(new CurlOption[options.size()]));
